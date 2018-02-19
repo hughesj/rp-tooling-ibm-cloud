@@ -5,8 +5,18 @@ Lightbend describe their new [Reactive Platform Tooling](https://developer.light
 
 As a Reactive Application developer you can choose to run Kubernetes on your development machine using Minikube. As the scale of the application increases, Minikube can easily be switched out for a cloud-based Kubernetes solution. In this article, I'll describe how to switch to using the [IBM Cloud Container Service](https://www.ibm.com/cloud/container-service). I'll use the [Chirper](https://github.com/longshorej/lagom-java-chirper-tooling-example) Twitter-like sample application which the Reactive Platform Tooling uses to showcase their integration with Kubernetes.
 
+
+
 Kubernetes is fundamentally about orchestrating the Docker containers. Docker containers are created from Docker images and those are held in a Docker registry. When you build Docker images on your laptop they are stored locally. Minikube uses this local store to fetch images and create containers. When you run Docker containers in a remote Kubernetes cluster, a remote Docker registry is needed. IBM Cloud provides one of those in the [Container Registry](https://www.ibm.com/cloud/container-registry) and, as you'd expect the Container Services (Kubernetes) and the Container Registry are well integrated.
 
 To get started for free (no credit card details required!), [register here](https://console.bluemix.net/registraction/free). There are, of course [more pricing options](https://www.ibm.com/cloud/pricing). Your free 'Lite' account gives you one free Kubernetes cluster to play with.
 
-The IBM Cloud CLI is a general purpose tool for controlling the resources and services available to you in the IBM Cloud. Follow the [instructions to install & configure the CLI](https://console.bluemix.net/docs/containers/cs_cli_install.html) which includes steps to install the container-service plugin, the container-registry plugin and configure the CLI to run `kubectl` the Kubernetes CLI. 
+`bx` is the IBM Cloud CLI general purpose tool for controlling the resources and services available to you in the IBM Cloud. Follow the [instructions to install & configure the CLI](https://console.bluemix.net/docs/containers/cs_cli_install.html) which includes steps to install the container-service plugin and the container-registry plugin.
+
+You can create a cluster through using `bx` but you may find it easier, at least the first time, to create your free cluster through the [web interface](https://console.bluemix.net/containers-kubernetes/clusters). When using the free cluster, you have one worker node with 2 CPUs and 4GB RAM and a default name of _mycluster_.
+
+When the cluster has been created, you configure your local `kubectl` command line tool using:
+
+```eval $(bx cs cluster-config <cluster_name> | grep 'KUBECONFIG')```
+
+> For more detail on what this is doing see the section: [Configuring the CLI to run kubectl](https://console.bluemix.net/docs/containers/cs_cli_install.html#cs_cli_configure)
