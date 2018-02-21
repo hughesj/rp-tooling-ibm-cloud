@@ -17,7 +17,7 @@ A short time after you've initiated the cluster creation, the web interface show
 
 Then you're shown how to configure `kubectl` to retrieve an id-token which you use to log into the Kubernetes Dashboard - a locally running web app using REST API calls to the Kubernetes cluster running on the IBM Cloud. You will see a UI like this:
 
-![Kubernetes Dashboard](Screen Shot 2018-02-21 at 15.16.54.png)
+![Kubernetes Dashboard](./Screen Shot 2018-02-21 at 15.16.54.png)
 ...
 
 
