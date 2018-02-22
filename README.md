@@ -31,6 +31,44 @@ Install the following programs on you system:
 * [SBT](http://www.scala-sbt.org/)
 * [reactive-cli](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/#install-the-cli)
 
+Set up the Reactive Sandbox instance of Cassandra in the Container Service:
+
+The [Reactive Sandbox](https://github.com/lightbend/reactive-sandbox) includes development-grade (i.e. it will lose your data) installations of Cassandra, Elasticsearch, Kafka, and ZooKeeper. It's packaged as a Helm chart for easy installation into your Kubernetes cluster.
+
+```bash
+helm init
+helm repo add lightbend-helm-charts https://lightbend.github.io/helm-charts
+helm update
+```
+
+Verify that Helm is available (this takes a minute or two):
+
+```bash
+kubectl --namespace kube-system get deploy/tiller-deploy
+```
+
+```
+NAME            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+tiller-deploy   1         1         1            1           3m
+```
+
+Install the sandbox. Since Chirper only uses Cassandra, we're disabling the other services but you can leave them enabled by omitting the `set` flag if you wish.
+
+```bash
+helm install lightbend-helm-charts/reactive-sandbox --name reactive-sandbox --set elasticsearch.enabled=false,kafka.enabled=false,zookeeper.enabled=false
+```
+
+Verify that it is available (this takes a minute or two):
+
+```bash
+kubectl get deploy/reactive-sandbox
+```
+
+```
+NAME               DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+reactive-sandbox   1         1         1            1           1m
+```
+
 Now clone the Chirper sample referred to by the Lightbend Orchestration for Kubernetes project:
 
 ```
@@ -47,7 +85,9 @@ Adding namespace 'chirper'...
 Successfully added namespace 'chirper'
 ```
 
-When using Minikube you invoke the sbt-native-packager using `sbt docker:publishLocal` but we're going to switch to publish to the Container Registry. For that we need to give `sbt` provide the registry location and namespace to which it will publish the images. You may already know the location of the Container Registry is - there is one in each IBM Cloud region. It's the 'Container Registry' line output when you execute `bx cr info`. For the namespace, we're going to use 'chirper'.
+If you were using Minikube you would invoke the 'sbt-native-packager' to create Docker images using `sbt docker:publishLocal`, but we're going to switch to publish to the Container Registry. For that we need to give `sbt` the registry location and namespace. You may already know the hostname of the Container Registry - there is one in each IBM Cloud region. It's the 'Container Registry' line output when you execute `bx cr info`.
+
+For the namespace, we're going to use 'chirper'.
 
 Add the following to the `build.sbt` file to the end of the definition of the `project` method around line 122:
 
@@ -72,4 +112,57 @@ You can check the images have uploaded by viewing the [IBM Cloud console page yo
 
 ![Container Registry after publishing images](images/ContainerReg.png)
 
+### Deploy to Kubernetes
+Now we're ready to direct the Container Service (Kubernetes) to deploy the images and run the application.
 
+You will need to run the following to set up your environment for the deploy. Be sure to adjust the secret variables, cassandra service address and Container Registry host as necessary.
+
+```
+REGISTRY=registry.eu-gb.bluemix.net
+NAMEPSACE=chirper
+
+# Be sure to change these secret values
+
+chirp_secret="youmustchangeme"
+friend_secret="youmustchangeme"
+activity_stream_secret="youmustchangeme"
+front_end_secret="youmustchangeme"
+
+# Default address for reactive-sandbox, change if using external Cassandra
+
+cassandra_svc="_cql._tcp.reactive-sandbox-cassandra.default.svc.cluster.local"
+
+# Configure the services to allow requests to the Kubernetes IP (Play's Allowed Hosts Filter)
+
+allowed_host=.
+```
+
+Note to reviewers: the command line set up for `bx cs` immediately after creating the cluster should have the following in it. If not then we need to add this here:
+```
+$ bx cs cluster-config mycluster
+OK
+The configuration for mycluster was downloaded successfully. Export environment variables to start using Kubernetes.
+
+export KUBECONFIG=/Users/xxx/.bluemix/plugins/container-service/clusters/mycluster/kube-config-mil01-mycluster.yml
+```
+
+There are four images necessary (ignoring the load test image). For each image we'll use the Lightbend `rp` tool to generate the Kubernetes deployment YAML configuration and pipe that to the `kubectl` command to apply the configuration to Kubernetes.
+
+```
+rp generate-kubernetes-resources "$REGISTRY/$NAMESPACE/activity-stream-impl:1.0.0-SNAPSHOT"   --generate-pod-controllers --generate-services   --env JAVA_OPTS="-Dplay.http.secret.key=$activity_stream_secret -Dplay.filters.hosts.allowed.0=$allowed_host" | kubectl apply -f -
+
+rp generate-kubernetes-resources "$REGISTRY/$NAMESPACE/front-end:1.0.0-SNAPSHOT"   --generate-pod-controllers --generate-services   --env JAVA_OPTS="-Dplay.http.secret.key=$front_end_secret -Dplay.filters.hosts.allowed.0=$allowed_host" | kubectl apply -f -
+
+rp generate-kubernetes-resources "$REGISTRY/$NAMESPACE/friend-impl:1.0.0-SNAPSHOT"   --generate-pod-controllers --generate-services   --env JAVA_OPTS="-Dplay.http.secret.key=$friend_secret -Dplay.filters.hosts.allowed.0=$allowed_host"   --external-service "cas_native=$cassandra_svc"   --pod-controller-replicas 2 | kubectl apply -f -
+
+rp generate-kubernetes-resources -l debug "$REGISTRY/$NAMESPACE/chirp-impl:1.0.0-SNAPSHOT"   --generate-pod-controllers --generate-services   --env JAVA_OPTS="-Dplay.http.secret.key=$chirp_secret -Dplay.filters.hosts.allowed.0=$allowed_host"   --external-service "cas_native=$cassandra_svc"   --service-type NodePort   --pod-controller-replicas 2 | kubectl apply -f -
+
+```
+
+Create the ingress:
+
+```
+rp generate-kubernetes-resources    --generate-ingress --ingress-name chirper   "$REGISTRY/$NAMESPACE/chirp-impl:1.0.0-SNAPSHOT"   "$REGISTRY/$NAMESPACE/friend-impl:1.0.0-SNAPSHOT"   "$REGISTRY/$NAMESPACE/activity-stream-impl:1.0.0-SNAPSHOT"   "$REGISTRY/$NAMESPACE/front-end:1.0.0-SNAPSHOT" | kubectl apply -f -
+```
+
+TODO: verify the installation.
