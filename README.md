@@ -2,9 +2,9 @@
 
 Lightbend describe their new [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/overview.html) as "... a developer-centric suite of tools that helps you deploy Reactive Platform applications to Kubernetes. It provides an easy way to create Docker images for your applications and introduces an automated process for generating Kubernetes resource files for you from those images."
 
-As a Reactive Application developer you may choose to run Kubernetes on your development machine using Minikube. As your application grows and the number of microservices increases, you may choose to offload Kubernetes to a cloud-based solution. The Lightbend Orchestration for Kubernetes documentation points to [the IBM Cloud Container Service](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/cluster-setup.html) as an alternative to Minikube. In this article, I'll describe how to make that switch, while using the [Chirper](https://github.com/longshorej/lagom-java-chirper-tooling-example) Twitter-like sample application - a Lagom based example used to showcase the Reactive applications running on Kubernetes.
+As a Reactive Application developer you may choose to run Kubernetes on your development machine using Minikube. As your application grows and the number of microservices increases, you may choose to offload Kubernetes to a cloud-based solution. The Lightbend Orchestration for Kubernetes documentation points to [the IBM Cloud Container Service](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/cluster-setup.html) as an alternative to Minikube. In this article, I'll describe how to make that switch, while using [Chirper](https://github.com/longshorej/lagom-java-chirper-tooling-example), a Twitter-like sample Lagom application, to showcase the Reactive application running on Kubernetes.
 
-Kubernetes is fundamentally about orchestrating the Docker containers. Docker containers are created from Docker images and those are held in a Docker registry. When you build Docker images on your laptop they are stored locally. Minikube uses this local store to fetch images and create containers. When you run Docker containers in a remote Kubernetes cluster, a remote Docker registry is needed. IBM Cloud provides one of those in the [Container Registry](https://www.ibm.com/cloud/container-registry) and, as you'd expect the Container Service (Kubernetes) and the Container Registry are well integrated.
+Kubernetes is fundamentally about orchestrating the Docker containers. Docker containers are created from Docker images and those are held in a Docker registry. When you build Docker images on your laptop they are stored locally. Minikube uses this local store to fetch images and create containers. When you run Docker containers in a remote Kubernetes cluster, a remote Docker registry is needed. IBM Cloud provides one of those in the [Container Registry](https://www.ibm.com/cloud/container-registry) and, as you'd expect, the Container Service (Kubernetes) and the Container Registry are well integrated.
 
 ## Register with IBM Cloud
 To use the IBM Cloud Container Service you need to register with IBM Cloud. You will be able to create a free Kubernetes cluster with a single [Node](https://kubernetes.io/docs/concepts/architecture/nodes/), as long as you [provide some payment details](https://console.bluemix.net/account/billing). Presumably to put off opportunistic Bitcoin miners. If you already have a Lite account, then you will need to add payment details to unlock your free cluster. If not, then use the [Pay as you go option](https://www.ibm.com/cloud/pricing) from the start.
@@ -17,14 +17,14 @@ A short time after you've initiated the cluster creation, the web interface show
 ![Kubernetes Dashboard](images/KubeDash.png)
 
 ## Somewhere to put Docker images
-When you run you microservices on Kubernetes, Kubernetes deploys Docker containers made from Docker images which it retrieves from a Docker registry. Your IBM Cloud account has a Docker registry associated with it, called the 'Container Registry' and to start with this registry is empty.
+When you run you microservices on Kubernetes, Kubernetes deploys Docker containers made from Docker images which it retrieves from a Docker registry. Your IBM Cloud account has a Docker registry associated with it, called the 'Container Registry', and to start with this registry is empty.
 
-The [Container Registry Quick Start](https://console.bluemix.net/containers-kubernetes/registry/start) gives instructions, for installing the container-registry plugin to the `bx` CLI and how to create a namespace which can receive images pushed to it. This will come in useful later when we use Lightbend Orchestration for Kubernetes to push the Chirper application images to the registry.
+The [Container Registry Quick Start](https://console.bluemix.net/containers-kubernetes/registry/start) gives instructions for installing the container-registry plugin to the `bx` CLI and how to create a namespace which can receive images pushed to it. This will come in useful later when we use Lightbend Orchestration for Kubernetes to push the Chirper application images to the registry.
 
 ## Developing Chirper with the IBM Cloud
 You may have already followed [the instructions for setting up the Chirper example](https://github.com/longshorej/lagom-java-chirper-tooling-example/blob/master/README.md) which includes instructions specific to Minikube. The set of prequisites and steps are similar for deploying to IBM Cloud:
 
-Install the following programs on you system:
+Install the following programs on your local system:
 
 * [Docker](https://store.docker.com/search?type=edition&offering=community)
 * [Helm](https://github.com/kubernetes/helm/blob/master/docs/install.md)
