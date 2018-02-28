@@ -1,8 +1,8 @@
 # Getting started with the Lightbend Orchestration for Kubernetes on the IBM Cloud
 
-Lightbend describe their new [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/overview.html) as "... a developer-centric suite of tools that helps you deploy Reactive Platform applications to Kubernetes. It provides an easy way to create Docker images for your applications and introduces an automated process for generating Kubernetes resource files for you from those images."
+Lightbend describe their new [Lightbend Orchestration for Kubernetes](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/overview.html) as "... a developer-centric suite of tools that helps you deploy Reactive Platform applications to Kubernetes. It provides an easy way to create Docker images for your applications and introduces an automated process for generating Kubernetes resource files for you from those images."
 
-As a Reactive Application developer you may choose to run Kubernetes on your development machine using Minikube. As your application grows and the number of microservices increases, you may choose to offload Kubernetes to a cloud-based solution. The Lightbend Orchestration for Kubernetes documentation points to [the IBM Cloud Container Service](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/cluster-setup.html) as an alternative to Minikube. In this article, I'll describe how to make that switch, while using [Chirper](https://github.com/longshorej/lagom-java-chirper-tooling-example), a Twitter-like [Lagom](https://www.lagomframework.com/) sample application, to showcase the Reactive Platform running on Kubernetes.
+As a Reactive Application developer you may choose to run Kubernetes on your development machine using Minikube. As your application grows and the number of microservices increases, you may choose to offload Kubernetes to a cloud-based solution. The Lightbend Orchestration for Kubernetes documentation points to [the IBM Cloud Container Service](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/cluster-setup.html) as an alternative to Minikube. In this article, I'll describe how to make that switch, while using [Chirper](https://github.com/longshorej/lagom-java-chirper-tooling-example), a Twitter-like [Lagom](https://www.lagomframework.com/) sample application, to showcase the Reactive Platform running on Kubernetes.
 
 Kubernetes is fundamentally about orchestrating the Docker containers. Docker containers are created from Docker images and those are held in a Docker registry. When you build Docker images on your laptop they are stored locally. Minikube uses this local store to fetch images and create containers. When you run Docker containers in a remote Kubernetes cluster, a remote Docker registry is needed. IBM Cloud provides one of those in the [Container Registry](https://www.ibm.com/cloud/container-registry) and, as you'd expect, the Container Service (Kubernetes) and the Container Registry are well integrated.
 
@@ -29,7 +29,7 @@ Install the following programs on your system:
 * [Docker](https://store.docker.com/search?type=edition&offering=community)
 * [Helm](https://github.com/kubernetes/helm/blob/master/docs/install.md)
 * [SBT](http://www.scala-sbt.org/)
-* [reactive-cli](https://developer.lightbend.com/docs/reactive-platform-tooling/latest/#install-the-cli)
+* [reactive-cli](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/cli-installation.html)
 
 Set up the Reactive Sandbox instance of Cassandra in the Container Service:
 
@@ -119,12 +119,12 @@ You will need to run the following to set up your environment for the deploy. Be
 REGISTRY=registry.eu-gb.bluemix.net
 NAMEPSACE=chirper
 
-# Be sure to change these secret values
+# Be sure to change these secret values, or the services will not start.
 
-chirp_secret="youmustchangeme"
-friend_secret="youmustchangeme"
-activity_stream_secret="youmustchangeme"
-front_end_secret="youmustchangeme"
+chirp_secret="changeme"
+friend_secret="changeme"
+activity_stream_secret="changeme"
+front_end_secret="changeme"
 
 # Default address for reactive-sandbox, change if using external Cassandra
 
@@ -135,10 +135,10 @@ cassandra_svc="_cql._tcp.reactive-sandbox-cassandra.default.svc.cluster.local"
 allowed_host=.
 ```
 
-There are four images necessary (ignoring the load test image). For each image we'll use the Lightbend `rp` tool to generate the Kubernetes deployment YAML configuration and pipe that to the `kubectl` command to apply the configuration to Kubernetes.
+There are four images necessary (ignoring the load test image). For each image we'll use the Lightbend `rp` tool to generate the Kubernetes deployment YAML configuration and pipe that to the `kubectl` command to apply the configuration to Kubernetes. 
 
 ```
-# deploy chirp-impl
+# deploy chirp-impl. Use two replicas which is the minimum for Akka Cluster based services.
 
 rp generate-kubernetes-resources "$REGISTRY/$NAMESPACE/chirp-impl:1.0.0-SNAPSHOT" \
   --generate-pod-controllers --generate-services \
@@ -149,7 +149,7 @@ rp generate-kubernetes-resources "$REGISTRY/$NAMESPACE/chirp-impl:1.0.0-SNAPSHOT
   --pod-controller-replicas 2 | kubectl apply -f -
 
 
-# deploy friend-impl
+# deploy friend-impl. Use two replicas which is the minimum for Akka Cluster based services.
 
 rp generate-kubernetes-resources "$REGISTRY/$NAMESPACE/friend-impl:1.0.0-SNAPSHOT" \
   --generate-pod-controllers --generate-services \
