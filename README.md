@@ -254,15 +254,5 @@ The URL to the Chirper application will be at the https port on this IP address.
 
 ![Chirper home page](images/Chirper.png)
 
-### Making an update
-
-You're now in a position to make a change to the application and build the change and deploy to Kubernetes in IBM Cloud. You can just build one of the modules, for example:
-
-```
-sbt chirp-impl/docker:publish
-```
-
-and the new Docker image will be published to the Container Registry and because the `imagePullPolicy` has been set to `Always`, Kubernetes will update the containers as soon as they are updated in the registry.
-
 ### Developing to the cloud
 By following the steps above you've seen how to start developing applications for the Reactive Platform to run on the IBM Cloud in Docker containers orchestrated by Kubernetes.
