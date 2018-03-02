@@ -31,7 +31,7 @@ You may have already followed [the instructions for setting up the Chirper examp
 Install the following programs on your system:
 
 * [Docker](https://store.docker.com/search?type=edition&offering=community)
-* [Helm](https://github.com/kubernetes/helm/blob/master/docs/install.md)
+* [Helm Client](https://github.com/kubernetes/helm/blob/master/docs/install.md#installing-the-helm-client)
 * [SBT](http://www.scala-sbt.org/)
 * [reactive-cli](https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/cli-installation.html)
 
@@ -117,7 +117,7 @@ You can check the images have uploaded by viewing the [IBM Cloud console page yo
 ### Deploy to Kubernetes
 Now we're ready to direct the Container Service (Kubernetes) to deploy the images and run the application.
 
-You will need to run the following to set up your environment for the deploy. Be sure to adjust the secret variables, cassandra service address and Container Registry host as necessary.
+You will need to run the following to set up your environment for the deploy. Be sure to adjust the secret variables and Container Registry host as necessary.
 
 ```
 REGISTRY=registry.eu-gb.bluemix.net
