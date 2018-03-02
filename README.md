@@ -7,7 +7,11 @@ As a Reactive Application developer you may choose to run Kubernetes on your dev
 Kubernetes is fundamentally about orchestrating the Docker containers. Docker containers are created from Docker images and those are held in a Docker registry. When you build Docker images on your laptop they are stored locally. Minikube uses this local store to fetch images and create containers. When you run Docker containers in a remote Kubernetes cluster, a remote Docker registry is needed. IBM Cloud provides one of those in the [Container Registry](https://www.ibm.com/cloud/container-registry) and, as you'd expect, the Container Service (Kubernetes) and the Container Registry are well integrated.
 
 ## Register with IBM Cloud
-To use the IBM Cloud Container Service you need to register with IBM Cloud. You will be able to create a free Kubernetes cluster with a single [Node](https://kubernetes.io/docs/concepts/architecture/nodes/), as long as you [provide some payment details](https://console.bluemix.net/account/billing). Presumably to put off opportunistic Bitcoin miners. If you already have a Lite account, then you will need to add payment details to unlock your free cluster. If not, then use the [Pay as you go option](https://www.ibm.com/cloud/pricing) from the start.
+To use the IBM Cloud Container Service you need an IBM Cloud account. If you don't already have one, [sign up for an IBMid and create your Lite (Free) account](https://console.bluemix.net/registration/free?). Then, to unlock your free Kubernetes cluster, you need to [provide some payment details](https://console.bluemix.net/account/billing).
+
+If you want to use a pre-existing Lite account, then you will need to ensure you have [provided payment details](https://console.bluemix.net/account/billing), to unlock your free cluster.
+
+Of course, [paid account options](https://www.ibm.com/cloud/pricing) also exist.
 
 ## Create your free cluster
 IBM Cloud provides a single command line tool: `bx` for controlling the resources and services available to you. Using the Container Service, you can create a Kubernetes cluster through using `bx` but you may find it easier, at least the first time, to create your free cluster through the [web interface](https://console.bluemix.net/containers-kubernetes/clusters).
@@ -100,8 +104,8 @@ Note: I'm in the UK so my registry hostname has `eu-gb` in its name. Yours may d
 Now, when you execute:
 
 ```
-$ bx cr login
-$ sbt docker:publish
+bx cr login
+sbt docker:publish
 ```
 
 the first command will redirect the local Docker engine to the Container Registry, and the second command will build the code and publish the images there.
