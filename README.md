@@ -114,8 +114,44 @@ You can check the images have uploaded by viewing the [IBM Cloud console page yo
 
 ![Container Registry after publishing images](images/ContainerReg.png)
 
+### Akka Clusters that scale with Kubernetes Pods
+
+Two of the Chirper services, friend-impl and chirp-impl make use of Akka Cluster. The [akka.io site describes an Akka Cluster](https://doc.akka.io/docs/akka/2.5.11/common/cluster.html) as providing:
+
+"... a fault-tolerant decentralized peer-to-peer based cluster membership service with no single point of failure or single point of bottleneck. It does this using gossip protocols and an automatic failure detector."
+
+There must be at least two members of an Akka Cluster to achieve the goal of 'no single point of failure'. Akka Cluster provides a way for each member member to discover each other member through a [gossip protocol](https://en.wikipedia.org/wiki/Gossip_protocol). A leader is determined, which is responsible for shifting members in and out of the cluster.
+
+This maps nicely to Kubernetes. Each Akka Cluster member runs in a Kubernetes Pod. As Kubernetes scales the number of Pods up and down, Akka Cluster [notices this and adds and removes members appropriately](https://github.com/akka/akka-management/blob/master/docs/src/main/paradox/discovery.md#discovery-method-kubernetes-api). To do this, Pods containing Akka Cluster based services need to be able to watch other Pods coming and going. This is done using the Kubernetes API and requires a Kubernetes Role Based Access Control to be configured. The following will add a Kubernetes Role called 'pod-reader' and bind it to the service account running processes within Pods:
+
+```
+echo '
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-pods
+subjects:
+- kind: User
+  name: system:serviceaccount:default:default
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+' | kubectl apply -f -
+```
+
 ### Deploy to Kubernetes
-Now we're ready to direct the Container Service (Kubernetes) to deploy the images and run the application.
+Now we're ready to direct Kubernetes to deploy the images and run the application.
 
 You will need to run the following to set up your environment for the deploy. Be sure to adjust the secret variables and Container Registry host as necessary.
 
@@ -139,7 +175,7 @@ cassandra_svc="_cql._tcp.reactive-sandbox-cassandra.default.svc.cluster.local"
 allowed_host=.
 ```
 
-There are four images necessary (ignoring the load test image). For each image we'll use the Lightbend `rp` tool to generate the Kubernetes deployment YAML configuration and pipe that to the `kubectl` command to apply the configuration to Kubernetes. 
+There are four images necessary. For each image we'll use the Lightbend `rp` tool to generate the Kubernetes deployment YAML configuration and pipe that to the `kubectl` command to apply the configuration to Kubernetes. 
 
 ```
 # deploy chirp-impl. Use two replicas which is the minimum for Akka Cluster based services.
@@ -193,7 +229,9 @@ rp generate-kubernetes-resources \
 
 You can view the results using:
 
-```kubectl describe ing```
+```
+kubectl describe ing
+```
 
 to get:
 
@@ -218,7 +256,7 @@ Events:  <none>
 Now we need something to use the metadata to provide the ingress service. This is usually handled by the platform Kubernetes is running in such as IBM Cloud, but we have been setting up Chirper in a free cluster. The free cluster has a single node and as such, isn't provided with an [Ingress service](https://console.bluemix.net/docs/containers/cs_ingress.html#ingress):
 > Ingress is available for standard clusters only and requires at least two worker nodes in the cluster to ensure high availability and that periodic updates are applied.
 
-So we're going to set up nginx to be the ingress service.
+So we're going to set up nginx to be the ingress service. In this case Lightbend's Orchestration for Kubernetes provides an example YAML Kubernetes configuration:
 
 ```
 kubectl apply -f https://developer.lightbend.com/docs/lightbend-orchestration-kubernetes/latest/files/example-nginx-controller.yaml
@@ -246,7 +284,7 @@ nginx-ingress                LoadBalancer   172.21.39.132    <pending>     80:32
 reactive-sandbox-cassandra   ClusterIP      None             <none>        9042/TCP                                          30m
 ```
 
-This indicates the internal port 80 of nginx-ingress is mapped externally to 32532 and port 443 is mapped externally to 31139.
+This indicates the internal port 80 (http) of nginx-ingress is mapped externally to 32532 and port 443 (https) is mapped externally to 31139. Yours will be different.
 
 To determine the public IP address use the following command:
 
@@ -254,7 +292,13 @@ To determine the public IP address use the following command:
 bx cs workers mycluster
 ```
 
-The URL to the Chirper application will be at the https port on this IP address. Use that address in a browser, and after accepting the security credentials as ok, you should see:
+The URL to the Chirper application will be at the https port on this IP address. Use:
+
+```
+https://<public ip address>:<external https port>/
+```
+
+in a browser, and after accepting the security credentials as ok, you should see:
 
 ![Chirper home page](images/Chirper.png)
 
