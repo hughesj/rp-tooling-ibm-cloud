@@ -157,7 +157,7 @@ You will need to run the following to set up your environment for the deploy. Be
 
 ```
 REGISTRY=registry.eu-gb.bluemix.net
-NAMEPSACE=chirper
+NAMESPACE=chirper
 
 # Be sure to change these secret values, or the services will not start.
 
